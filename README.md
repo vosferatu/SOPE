@@ -37,6 +37,7 @@ shell> find ~ -name lixo.txt -print
 /home/user/mbin/myscanf/tmp/lixo.txt
 
 
+
 shell> find ~ -name lixo.txt -exec file '{}' \;  //NOTA: file é um utilitário de Unix
 
 /home/user/tmp/lixo.txt: ASCII text
@@ -44,9 +45,11 @@ shell> find ~ -name lixo.txt -exec file '{}' \;  //NOTA: file é um utilitário 
 /home/user/mbin/myscanf/tmp/lixo.txt: HTML document text  
 
 
+
 shell> find ~ -name lixo.txt -delete
 
 shell> 
+
 
 
 shell> find . -type l -print
@@ -58,6 +61,7 @@ shell> find . -type l -print
 ...
 
 
+
 shell> find / -perm 0400 -print
 
 /bak/multimedia/figs/bear.jpg
@@ -65,6 +69,7 @@ shell> find / -perm 0400 -print
 
 /bak/multimedia/figs/cubs.jpg
 ...
+
 
 
 
@@ -96,6 +101,7 @@ mais delongas; se for N (ou n), o programa prossegue como se nada tivesse aconte
 
 
 
+
 # Requisitos arquiteturais 
 
 Apesar de, como foi dito, a estrutura do programa ser deixada a cargo de quem o vai escrever, há alguns requisitos arquiteturais
@@ -108,10 +114,11 @@ que são exigidos. O programa deve:
 
   ->  percorrer cada diretório distinguindo os tipos de ficheiro nele contidos: 
   
-     -> a um ficheiro normal encontrado, serão aplicados os testes e as ações estipuladas na linha de comando; 
+     1. a um ficheiro normal encontrado, serão aplicados os testes e as ações estipuladas na linha de comando; 
    
-     -> a um (sub-)diretório, corresponderá a criação de um processo descendente idêntico, que repetirá o aqui descrito a esse
+     2. a um (sub-)diretório, corresponderá a criação de um processo descendente idêntico, que repetirá o aqui descrito a esse
          (sub-)diretório. 
+
 
 
 
