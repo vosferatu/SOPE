@@ -1,5 +1,4 @@
-# SOPE:
-# sfind: versão simplificada de *find* 
+# SOPE: sfind: versão simplificada de *find* 
 
 ##man *find*: find - search for files in a directory hierarchy...
 ---------------------------------------------------------------------------------------------------------------------------------
@@ -38,19 +37,16 @@ shell> find ~ -name lixo.txt -print
 
 
 
+
 shell> find ~ -name lixo.txt -exec file '{}' \;  //NOTA: file é um utilitário de Unix
 
 /home/user/tmp/lixo.txt: ASCII text
 
 /home/user/mbin/myscanf/tmp/lixo.txt: HTML document text  
 
-
-
 shell> find ~ -name lixo.txt -delete
 
 shell> 
-
-
 
 shell> find . -type l -print
 
@@ -61,16 +57,12 @@ shell> find . -type l -print
 ...
 
 
-
 shell> find / -perm 0400 -print
 
 /bak/multimedia/figs/bear.jpg
 
-
-/bak/multimedia/figs/cubs.jpg
+/bak/multimedia/figs/cubs.jpg  
 ...
-
-
 
 
 # Requisitos funcionais 
