@@ -1,6 +1,6 @@
-# SOPE: sfind: versão simplificada de *find* 
+# sfind: versão simplificada de *find* 
 
-##man *find*: find - search for files in a directory hierarchy...
+## man *find*: find - search for files in a directory hierarchy...
 ---------------------------------------------------------------------------------------------------------------------------------
 
 
