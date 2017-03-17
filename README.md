@@ -36,15 +36,18 @@ shell> find ~ -name lixo.txt -print
 
 /home/user/mbin/myscanf/tmp/lixo.txt
 
+
 shell> find ~ -name lixo.txt -exec file '{}' \;  //NOTA: file é um utilitário de Unix
 
 /home/user/tmp/lixo.txt: ASCII text
 
 /home/user/mbin/myscanf/tmp/lixo.txt: HTML document text  
 
+
 shell> find ~ -name lixo.txt -delete
 
 shell> 
+
 
 shell> find . -type l -print
 
@@ -53,6 +56,7 @@ shell> find . -type l -print
 ./so/material
 
 ...
+
 
 shell> find / -perm 0400 -print
 
@@ -75,6 +79,7 @@ suas funcionalidades. Assim, deve ser capaz de reconhecer e implementar as opç�
 
 -perm mode        (mode é um valor em octal correspondente às permissões de acesso a um ficheiro, e.g 0644). 
 
+
 Deve também ser capaz de executar sobre os ficheiros encontrados as seguintes ações: 
 
 -print            (mostra no ecrã o nome dos ficheiros encontrados); 
@@ -83,9 +88,11 @@ Deve também ser capaz de executar sobre os ficheiros encontrados as seguintes a
 
 -exec command ;   (executa command - nota: os ficheiros encontrados são representados por {} em command).
 
+
 Além disto (o que não acontece com find!), pretende-se que, ao se carregar em CTRL+C, todo o programa interrompa a operação e
 coloque ao utilizador a pergunta: «Are you sure you want to terminate (Y/N)?». Se a resposta for Y (ou y), o programa termina sem
 mais delongas; se for N (ou n), o programa prossegue como se nada tivesse acontecido.  
+
 
 
 
@@ -108,11 +115,13 @@ que são exigidos. O programa deve:
 
 
 
+
 # Produto final
 
 O  trabalho  total  consiste  na  produção  de  um  ficheiro  compacto,  que  inclui  o  código-fonte  com  o  programa  
 desenvolvido e um makefile preparado para facilitar a geração do executável. O compacto, identificado com um nome do tipo
 TxGyy.tar.gz, onde x e yy são o número da turma e do grupo, respetivamente, deve ser submetido no Moodle. 
+
 
 
 
