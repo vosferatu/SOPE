@@ -9,12 +9,16 @@ man find: find - search for files in a directory hierarchy...
 
 Completando  com  sucesso  o  trabalho,  os  alunos  demonstram  conhecer  e  saber  utilizar  a  interface  programática de UNIX 
 para: 
+
   ->    criar novos processos; 
+  
   ->    fazê-los intercomunicar por sinais; 
+  
   ->    percorrer um sistema de ficheiros e dele obter informações. 
 
 
 # Descrição geral 
+
 
 A parte de programação do trabalho consiste na escrita de uma versão (muito) simplificada do utilitário de Unix "find" 1
 que percorre de forma recursiva um diretório, encontrando ficheiros que satisfaçam a algumas condições e sobre eles executando as
@@ -27,25 +31,37 @@ de  certos  requisitos, apresentados abaixo.
 # Exemplos de invocação com find:
 
 shell> find ~ -name lixo.txt -print
+
 /home/user/tmp/lixo.txt
+
 /home/user/mbin/myscanf/tmp/lixo.txt
 
 shell> find ~ -name lixo.txt -exec file '{}' \;  //NOTA: file é um utilitário de Unix
+
 /home/user/tmp/lixo.txt: ASCII text
+
 /home/user/mbin/myscanf/tmp/lixo.txt: HTML document text  
 
 shell> find ~ -name lixo.txt -delete
+
 shell> 
 
 shell> find . -type l -print
+
 ./so/www
+
 ./so/material
+
 ...
 
 shell> find / -perm 0400 -print
+
 /bak/multimedia/figs/bear.jpg
+
+
 /bak/multimedia/figs/cubs.jpg
 ...
+
 
 
 # Requisitos funcionais 
@@ -72,6 +88,7 @@ coloque ao utilizador a pergunta: «Are you sure you want to terminate (Y/N)?».
 mais delongas; se for N (ou n), o programa prossegue como se nada tivesse acontecido.  
 
 
+
 # Requisitos arquiteturais 
 
 Apesar de, como foi dito, a estrutura do programa ser deixada a cargo de quem o vai escrever, há alguns requisitos arquiteturais
@@ -84,14 +101,15 @@ que são exigidos. O programa deve:
 
   ->  percorrer cada diretório distinguindo os tipos de ficheiro nele contidos: 
   
-        -> a um ficheiro normal encontrado, serão aplicados os testes e as ações estipuladas na linha de comando; 
+     -> a um ficheiro normal encontrado, serão aplicados os testes e as ações estipuladas na linha de comando; 
    
-        -> a um (sub-)diretório, corresponderá a criação de um processo descendente idêntico, que repetirá o aqui descrito a esse
-             (sub-)diretório. 
+     -> a um (sub-)diretório, corresponderá a criação de um processo descendente idêntico, que repetirá o aqui descrito a esse
+         (sub-)diretório. 
 
 
 
-# Produto final 
+# Produto final
+
 O  trabalho  total  consiste  na  produção  de  um  ficheiro  compacto,  que  inclui  o  código-fonte  com  o  programa  
 desenvolvido e um makefile preparado para facilitar a geração do executável. O compacto, identificado com um nome do tipo
 TxGyy.tar.gz, onde x e yy são o número da turma e do grupo, respetivamente, deve ser submetido no Moodle. 
