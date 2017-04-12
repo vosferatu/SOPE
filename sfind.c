@@ -76,6 +76,11 @@ int procArgs(int argc, char *argv[]){
 
 int main(int argc, char *argv[]){
 
+    char* buff[256];
+    char* path;
+    path = getcwd(NULL,sizeof(buff));
+
+    printf("\ninitial path: %s\n\n", path);
     int valide = procArgs(argc, argv);
     switch (valide) {
         case -1: //Invalide args
