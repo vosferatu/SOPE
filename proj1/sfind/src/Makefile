@@ -6,11 +6,9 @@ CFLAGS = -Wall
 
 TARGET = sfind
 
-DEPS = sfind.h
-
 all: sfind
 
 sfind: sfind.c 
-	$(CC) $(CFLAGS) -o bin/sfind sfind.c
+	$(CC) $(CFLAGS) -o sfind sfind.c
 
-clean: $(RM) bin/* 
+clean: $(RM) * 
