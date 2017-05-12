@@ -1,4 +1,4 @@
-int main(int num, char * path[])
+int main(int argc, char* argv[])
 {
 
 }
