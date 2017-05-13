@@ -11,6 +11,7 @@
 
 int main(int argc, char *argv[])
 {
+	/*
 	setbuf(stdout, NULL);
 	if (argc != 3)
 	{
@@ -41,5 +42,9 @@ int main(int argc, char *argv[])
 			strcat(fifoName, pid);
 		}
 	}
+	*/
+
+	gerador(100,500);
+	return 0;
 }
 
