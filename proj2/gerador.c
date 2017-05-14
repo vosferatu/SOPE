@@ -10,7 +10,7 @@
 		int d;
 	}Pedido;
 
-		char *getGender(){
+		char getGender(){
 			char gender = '';
 			int r = rand() % 2;
 			if(r==0)
@@ -19,7 +19,7 @@
 			return gender;
 		}
 
-		int *getRandomTime(){
+		int getRandomTime(){
 			int d=0;
 			d = rand() % maxUtilizacao + 1;
 		}
@@ -35,15 +35,17 @@
 
 void gerarPedidos(int nPedidos, int maxUtilizacao){
 	int pedidos[nPedidos];
-	int counter = 1
+	int counter = 1;
+	int pedidosM=0;
+	int pedidosF=0;
 	char buf[BUF_LENGTH];
 
 	while(counter < nPedidos){
 
 		Pedido *p = malloc(sizeof(struct pedido));
 		p->id = counter;
-		p->gender = gender;
-		p->d = d;
+		p->gender = getGender();
+		p->d = getRandomTime();
 
 		escrevePedidoEmFicheiro(p);
 
