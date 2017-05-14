@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
 	}
 	*/
 
+
 	gerador(100,500);
 	return 0;
 }

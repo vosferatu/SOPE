@@ -201,7 +201,7 @@ int main(int argc, char* argv[]) {
     //Abertura FIFO rejeitados
     while ((ENTRADA_FIFO_FD = open("/tmp/entrada", O_RDONLY)) == -1) {
         if (errno == EEXIST)
-        printf("FIFO 'entrada' não existe! Tentando de novo...\n");
+        printf("FIFO 'entrada' j� existe! Tentando de novo...\n");
     }
 
     //Criação e abertura de FIFO de rejeitados

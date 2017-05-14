@@ -26,14 +26,6 @@ void gerador(int nPedidos, int maxUtilizacao){
 		Pedido *p = malloc(sizeof(struct pedido));
 		p->gender = gender;
 		p->d = d;
- /*
-		int fd2 = open("output", O_WRONLY | O_CREAT | O_EXCL, 0644);
-		 if (fd2 == -1) {
-		  perror(argv[2]);
-		  close(fd1);
-		  return 3;
-		 }
-		 */
 
 
 		FILE * dst= fopen("output", "w");
@@ -42,5 +34,30 @@ void gerador(int nPedidos, int maxUtilizacao){
 		    fclose(file);
 		}
 	}
+
+
+	int main(int argc, char *argv[])
+	{
+
+		if (argc != 3)
+		{
+			printf("Numero invalido de argumentos! USO: gerador <nPedidos> <periodoMaximoUtilizacao>\n");
+			exit(EXIT_FAILURE);
+		}
+
+		int nPedidos = atoi(argv[1]);
+		int maxUtilizacao = atoi(argv[2]);
+
+		//Criacao do FIFO de entrada
+		 if (mkfifo("/tmp/entrada", S_IRUSR | S_IWUSR) != 0) {
+			 if (errno==EEXIST)
+				 printf("FIFO '/tmp/entrada' já existe\n");
+		        else
+		        printf("Nao foi possivel criar o FIFO '/tmp/entrada'\n");
+		        exit(EXIT_FAILURE);
+		    }
+		 else printf("FIFO '/tmp/entrada' criada com sucesso\n");
+
+		 ENTRADA_FIFO_FD = open("/tmp/entrada", O_WRONLY | O_NONBLOCK);
 }
 
