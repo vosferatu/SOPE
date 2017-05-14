@@ -2,6 +2,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <pthread.h>
+#include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/file.h>
+
 #define BUF_LENGTH 256
 
 	typedef struct pedido{
@@ -41,6 +47,7 @@ void gerarPedidos(int nPedidos, int maxUtilizacao){
 	char buf[BUF_LENGTH];
 
 	while(counter < nPedidos){
+		pthread_mutex_lock(&mut); // lock thread
 
 		Pedido *p = malloc(sizeof(struct pedido));
 		p->id = counter;
@@ -50,11 +57,29 @@ void gerarPedidos(int nPedidos, int maxUtilizacao){
 		escrevePedidoEmFicheiro(p);
 
 		counter++;
+
+		if(p->gender=='M')
+			pedidosM++;
+		else pedidosF++;
+
+		write(ENTRADA_FIFO_FD, &p, sizeof(pedido));
+		pthread_mutex_unlock(&mut); // unlock thread
+		sleep(2);
 	}
+
+	close(ENTRADA_FIFO_FD);
+	return NULL;
+}
 
 
 	int main(int argc, char *argv[])
 	{
+
+		// get program start timing
+		    clock_gettime(CLOCK_MONOTONIC, &startTimespec);
+
+		// generate new random seed
+		    srand(time(NULL));
 
 		if (argc != 3)
 		{
