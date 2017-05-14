@@ -198,10 +198,11 @@ int main(int argc, char* argv[]) {
     if(balFile == NULL)
     printf(". SAUNA: Error opening balFile\n");
 
-    //Abertura FIFO rejeitados
+    //Abertura FIFO entrada
     while ((ENTRADA_FIFO_FD = open("/tmp/entrada", O_RDONLY)) == -1) {
-        if (errno == EEXIST)
-        printf("FIFO 'entrada' j� existe! Tentando de novo...\n");
+        if (errno != EEXIST){
+            printf("FIFO 'entrada' nao existe! Tentando de novo...\n");
+        }
     }
 
     //Criação e abertura de FIFO de rejeitados
