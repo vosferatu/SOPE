@@ -31,7 +31,7 @@ void criarFicheiroRegisto (){
     strcpy(LOG_MSG_PATH, endString);
 }
 
-void escreverFicheiro(Pedido* r ){
+void escreverFicheiro(Pedido* pedido ){
     gettimeofday(&stop, NULL);
     float elapsed = (float) ((float) stop.tv_usec - inicio.tv_usec) / 1000;
 
@@ -69,7 +69,7 @@ void* gerador(void* arg){
     }
     else PEDIDO_F++;
 
-    escreverFicheiro(Pedido *r);
+    escreverFicheiro(pedido);
 
     write(FD_ENTRADAS, pedido, sizeof(Pedido));
 
@@ -128,7 +128,7 @@ int main(int argc, char* argv[]){
   srand((unsigned) time(&t));
 
   if(argc != 3){
-    printf("Wrong number of arguments. USAGE: program_name <number of NUM_PEDIDOS> <max duracao>\n");
+    printf("Argumentos invalidos. USO: gerador <n. pedidos> <max duracao>\n");
     exit(-1);
   }
   NUM_PEDIDOS = atoi(argv[1]);
