@@ -10,6 +10,9 @@
 
 #define BUF_LENGTH 256
 
+
+int pedidosM=0, pedidosF=0, rejeitadosM=0, rejeitadosF=0, descartadosM=0, descartadosF=0;
+
 	typedef struct pedido{
 		int id;
 		char gender;
@@ -42,8 +45,6 @@
 void gerarPedidos(int nPedidos, int maxUtilizacao){
 	int pedidos[nPedidos];
 	int counter = 1;
-	int pedidosM=0;
-	int pedidosF=0;
 	char buf[BUF_LENGTH];
 
 	while(counter < nPedidos){
