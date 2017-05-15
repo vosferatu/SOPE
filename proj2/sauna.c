@@ -159,7 +159,7 @@ int main(int argc, char* argv[]){
   GENERO_ATUAL = 'V'; //sauna "V"azia
 
   if (mkfifo(FIFO_REJEITADOS, S_IRUSR | S_IWUSR) != 0 && errno != EEXIST){
-    perror("Erro ao crear o fifo de rejeitados");
+    perror("Erro ao criar o fifo de rejeitados");
     exit(EXIT_FAILURE);
   }
 
