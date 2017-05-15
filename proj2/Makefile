@@ -1,7 +1,5 @@
-gs:	gerador.c sauna.c
-	gcc gerador.c -o gerador -D_REENTRANT -lpthread -Wall
-	gcc sauna.c -o sauna -D_REENTRANT -lpthread -Wall
+DEPS = uteis.h
 
-clean:
-	rm -f gerador
-	rm -f sauna
+make: sauna.c gerador.c
+	gcc -o sauna -Wall -pthread sauna.c
+	gcc -o gerador -Wall -pthread gerador.c

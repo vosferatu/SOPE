@@ -1,239 +1,186 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <time.h>
-#include <sys/time.h>
-#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/file.h>
-#include <string.h>
+#include <errno.h>
 #include <pthread.h>
-#include <time.h>
+#include <string.h>
+#include <sys/time.h>
+#include "uteis.h"
 
-FILE* balFile;
+//Mutex initializer.
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-int capacidade; //capacidade  da sauna
+//Sauna specific variables.
+int capacidade, vagas;
+char GENERO_ATUAL;
+int RECEBIDO_F, RECEBIDO_M, REJEITADO_F, REJEITADO_M, SERVIDO_F, SERVIDO_M;
+int PEDIDOS_EM_ESPERA;
 
-char GENERO_ATUAL = 'E'; //genero quando a sauna esta vazia
-int PEDIDOS_POR_LER; //numero de pedidos ainda por ler
-int LUGARES_OCUPADOS = 0; //numero de pessoas dentro da sauna
 
-int ENTRADA_FIFO_FD; //file descriptor do FIFO de entrada
-int REJEITADOS_FIFO_FD; //file descriptor do FIFO de rejeitados
+//Log file path and descriptor.
+char* LOG_MSG_PATH;
+FILE* LOG_FILE;
+char* tip[] = {"RECEBIDO", "REJEITADO", "SERVIDO"};
+struct timeval inicio, stop; //estruturas para armazenar tempo
 
-struct timeval abertura; //struct que guarda a hora de inicio do programa
+void imprimirEstatisticas(){
 
-pthread_t threadsTid[255]; //array com os tids das threads a correr
-int threadPos=0;
-
-int M_SERVIDOS=0;
-int M_REJEITADOS=0;
-int M_RECEBIDOS=0;
-int F_SERVIDOS=0;
-int F_REJEITADOS=0;
-int F_RECEBIDOS=0;
-
-typedef struct {
-    int id; //numero do pedido
-    char genero;
-    int duracao;
-    int recusas;
-} Pedido;
-
-void printStats(){
-
-    printf("[SAUNA RECEBIDOS]\n");
-    printf(" > m: %d\n", M_RECEBIDOS);
-    printf(" > f: %d\n", F_RECEBIDOS);
-    printf(" > total: %d\n", M_RECEBIDOS + F_RECEBIDOS);
-
-    printf("[SAUNA SERVIDOS]\n");
-    printf(" > m: %d\n", M_SERVIDOS);
-    printf(" > f: %d\n", F_SERVIDOS);
-    printf(" > total: %d\n", M_SERVIDOS + F_SERVIDOS);
-
-    printf("[SAUNA REJEITADOS]\n");
-    printf(" > m: %d\n", M_REJEITADOS);
-    printf(" > f: %d\n", F_REJEITADOS);
-    printf(" > total: %d\n", M_REJEITADOS + F_REJEITADOS);
+    printf("\nRESUMO:\n\n");
+    printf("Recebidos: Homens (%d), Mulheres (%d), Total (%d)\n", RECEBIDO_M, RECEBIDO_F, RECEBIDO_M + RECEBIDO_F);
+    printf("Rejeitados: Homens(%d), Mulheres, Total (%d)\n", REJEITADO_M, REJEITADO_F, REJEITADO_M + REJEITADO_F);
+    printf("Servidos: Homens (%d), Mulheres (%d), Total (%d)\n\n", SERVIDO_M, SERVIDO_F, SERVIDO_M + SERVIDO_F);
+    printf("\n\n");
 }
 
-void escreverFicheiro(Pedido *pedido, int tid, char* tip){
-
-    struct timeval end; //struct que guarda a hora do instante pretendido
-    gettimeofday(&end, NULL);
-    double inst = (double)(end.tv_usec - abertura.tv_usec)/100; //milissegundos depois do inicio do programa
-
-    fprintf(balFile, "%-9.2f - %-4d - %-12d - %-4d: %-1c - %-4d - %-10s\n", inst, getpid(), tid ,pedido->id,pedido->genero, pedido->duracao, tip);
-
-    if(pedido->genero=='M'){
-        if(strcmp(tip,"REJEITADO")==0) M_REJEITADOS++;
-        if(strcmp(tip,"RECEBIDO")==0) M_RECEBIDOS++;
-        if(strcmp(tip,"SERVIDO")==0) M_SERVIDOS++;
-    }
-    else{
-        if(strcmp(tip,"REJEITADO")==0) F_REJEITADOS++;
-        if(strcmp(tip,"RECEBIDO")==0) F_RECEBIDOS++;
-        if(strcmp(tip,"SERVIDO")==0) F_SERVIDOS++;
-    }
-
+void criarFicheiroRegisto(){
+    char pid_str[32], endString[64] = "/tmp/bal.";
+    sprintf(pid_str, "%d", getpid());
+    strcat(endString, pid_str);
+    LOG_MSG_PATH = (char*) malloc(strlen(endString) + 1);
+    strcpy(LOG_MSG_PATH, endString);
 }
 
-void tratarRejeitados(Pedido* pedido){
-
-    pedido->recusas = pedido->recusas + 1;
-
-    if(pedido->recusas < 3)
-    PEDIDOS_POR_LER++; //como foi rejeitado menos que 3 vezes quer dizer que eventualmente vai chegar à sauna novamente
-
-    printf(". SAUNA (rejeitado): P:%i-G:%c-T:%i-D:%i;\n", pedido->id, pedido->genero, pedido->duracao, pedido->recusas);
-    write(REJEITADOS_FIFO_FD, pedido, sizeof(Pedido));
+void escreverFicheiro(Pedido* r){
+    gettimeofday(&stop, NULL);
+    double elapsed = (stop.tv_sec - inicio.tv_sec)*1000.0f + (stop.tv_usec - inicio.tv_usec) / 1000.0f;
+    LOG_FILE = fopen(LOG_MSG_PATH, "a");
+    fprintf(LOG_FILE, "%9.2f - %4d - %15lu - %2d - %c - %5d - %8s\n", elapsed, getpid(), pthread_self(), r->id, r->genero, r->duracao, tip[2]);
+    fclose(LOG_FILE);
 }
 
-void *atendimento(void *arg) {
+void* atendimento(void* arg){
 
-    Pedido *pedido = (Pedido*)arg;
+  Pedido* r = (Pedido*) arg;
 
-    printf(". SAUNA: %d entrou\n",pedido->id);
-    printf("%d: %d\n", pedido->id, pedido->duracao);
-    usleep(pedido->duracao*100);
+  if (r->genero == 'M') {
+      printf("M: entrou o utente %d por %d ms.\n", r->id, r->duracao);
+      SERVIDO_M++;
+  }
+  else {
+      printf("F: entrou a utente %d por %d ms.\n", r->id, r->duracao);
+      SERVIDO_F++;
+  }
 
-    escreverFicheiro(pedido, pthread_self(),"SERVIDO");
+  usleep(r->duracao * 1000);
 
-    LUGARES_OCUPADOS--; //a pessoa sai
+  pthread_mutex_lock(&mutex);
+  vagas++;
+  if (vagas == capacidade){
+     GENERO_ATUAL = 'V'; // a sauna encontra-se vazia
+  }
+  pthread_mutex_unlock(&mutex);
 
-    printf(". SAUNA: %d saiu\n",pedido->id);
+  printf("Utente %d saiu.\n", r->id);
 
-    printf(". SAUNA: PEOPLE IN SAUNA: %d\n", LUGARES_OCUPADOS);
-
-    if(LUGARES_OCUPADOS==0){
-        GENERO_ATUAL = 'E';
-        printf(". SAUNA: allowed genero: %c\n",GENERO_ATUAL);
-    }
-
-    pthread_exit(NULL);
+  pthread_exit(NULL);
 }
 
-int validarPedidos(Pedido *pedido) {
+void* handlerPedidos(void* arg){
+  pthread_t tid[128] = {0};
+  int current = 0;
+  int fifo_fd;
 
-    if(pedido->genero != GENERO_ATUAL) //se o genero for diferente do correntemente na sauna
-    return 0;
-    else if (LUGARES_OCUPADOS >= capacidade) //se a sauna estiver cheia
-    return 0;
-    else return 1;
-}
-
-void tratarPedidos(Pedido* pedido){
-
-    if(GENERO_ATUAL=='E') { //primeira pessoa na sauna
-        GENERO_ATUAL = pedido->genero; //o genero da sauna muda
-        printf(". SAUNA: allowed genero: %c\n",GENERO_ATUAL);
-        printf(". SAUNA (servido): P:%i-G:%c-T:%i-D:%i;\n", pedido->id, pedido->genero, pedido->duracao, pedido->recusas);
-        LUGARES_OCUPADOS++; //numero de pessoas na sauna aumenta
-        escreverFicheiro(pedido, getpid(),"RECEBIDO");
-        pthread_create(&threadsTid[threadPos], NULL, atendimento,pedido);
-        threadPos++;
+  while ((fifo_fd = open(FIFO_ENTRADAS, O_RDONLY)) == -1){
+    if (errno == ENOENT || errno == ENXIO){
+      printf("Retrying...\n");
+      sleep(1);
     } else {
-        if(validarPedidos(pedido) != 0) {
-            printf(". SAUNA (servido): P:%i-G:%c-T:%i-D:%i;\n", pedido->id, pedido->genero, pedido->duracao, pedido->recusas);
-            LUGARES_OCUPADOS++; //numero de pessoas na sauna aumenta
-            escreverFicheiro(pedido, getpid(),"RECEBIDO");
-            pthread_create(&threadsTid[threadPos], NULL, atendimento,pedido);
-            threadPos++;
-        } else {
-            escreverFicheiro(pedido, getpid(),"RECEBIDO");
-            escreverFicheiro(pedido, getpid(), "REJEITADO");
-            tratarRejeitados(pedido);
-
-        }
+      perror("Error opening GENERATE fifo");
+      exit(-1);
     }
-    return;
+  }
+
+  //Gets the amount of requests to read.
+  read(fifo_fd, &PEDIDOS_EM_ESPERA, sizeof(int));
+
+  //Generates the specified amount of requests.
+  while (PEDIDOS_EM_ESPERA){
+    Pedido* r = malloc(sizeof(Pedido));
+
+    if (r->genero == 'M') RECEBIDO_M++;
+    else RECEBIDO_F++;
+
+    //Handles a new request.
+    if (read(fifo_fd, r, sizeof(Pedido)) != 0){
+      PEDIDOS_EM_ESPERA--;
+
+      gettimeofday(&stop, NULL); //Stops counting time.
+      double elapsed = (stop.tv_sec - inicio.tv_sec)*1000.0f + (stop.tv_usec - inicio.tv_usec) / 1000.0f;
+      LOG_FILE = fopen(LOG_MSG_PATH, "a"); //Opens log file.
+      fprintf(LOG_FILE, "%9.2f - %4d - %15lu - %2d - %c - %5d - %8s\n", elapsed, getpid(), pthread_self(), r->id, r->genero, r->duracao, tip[0]);
+      fclose(LOG_FILE); //Closes log file.
+
+      if ((r->genero == GENERO_ATUAL || GENERO_ATUAL == 'V') && vagas > 0){
+        vagas--; //Decrements the available seat counter.
+        GENERO_ATUAL = r->genero;
+        pthread_create(&tid[current], NULL, atendimento, (void*) r);
+
+        current++;
+      } else {
+        r->recusas++;
+
+        write(FD_REJEITADOS, r, sizeof(Pedido));
+
+        if (r->genero == 'M') REJEITADO_M++;
+        else REJEITADO_F++;
+
+        if (r->recusas != 3) PEDIDOS_EM_ESPERA++;
+
+        //Logs the request.
+        gettimeofday(&stop, NULL); //Stops counting time.
+        double elapsed = (stop.tv_sec - inicio.tv_sec)*1000.0f + (stop.tv_usec - inicio.tv_usec) / 1000.0f;
+        LOG_FILE = fopen(LOG_MSG_PATH, "a"); //Opens log file.
+        fprintf(LOG_FILE, "%9.2f - %4d - %15lu - %2d - %c - %5d - %8s\n", elapsed, getpid(), pthread_self(), r->id, r->genero, r->duracao, tip[1]);
+        fclose(LOG_FILE); //Closes log file.
+      }
+    }
+  }
+  close(FD_REJEITADOS);
+
+  for(int i = 0; tid[i] != 0; i++){
+    pthread_join(tid[i], NULL);
+  }
+  return NULL;
 }
 
-void receberPedidos() {
-    Pedido* pedido;
-    int n;
-    while(PEDIDOS_POR_LER != 0) { //enquanto houver pedidos para ler
-        pedido = malloc(sizeof(Pedido));
-        n=read(ENTRADA_FIFO_FD, pedido, sizeof(Pedido));
-        if(n>0){
-            printf(". SAUNA REQUESTS TO READ: %d\n", PEDIDOS_POR_LER);
-            tratarPedidos(pedido);
-            PEDIDOS_POR_LER--; //um pedido foi lido, decrementar pedidos para ler
-        }
+int main(int argc, char* argv[]){
+
+  gettimeofday(&inicio, NULL);
+
+  if (argc != 2){
+    printf("Argumentos invalidos! USO: sauna <n. max utentes>\n");
+    exit(-1);
+  }
+
+  capacidade = atoi(argv[1]);
+  vagas = capacidade;
+  GENERO_ATUAL = 'V'; //sauna "V"azia
+
+  if (mkfifo(FIFO_REJEITADOS, S_IRUSR | S_IWUSR) != 0 && errno != EEXIST){
+    perror("Erro ao crear o fifo de rejeitados");
+    exit(EXIT_FAILURE);
+  }
+
+  while ((FD_REJEITADOS = open(FIFO_REJEITADOS, O_WRONLY)) == -1){
+    if (errno == ENOENT || errno == ENXIO){
+      printf("Esperando...\n");
+      sleep(1);
+    } else {
+      perror("Erro ao abrir o fifo de rejeitados");
+      exit(EXIT_FAILURE);
     }
-    if(PEDIDOS_POR_LER==0){ //fim do pogramas
-        Pedido* pedido =malloc(sizeof(Pedido));
-        pedido->id=-1; //quando o gerador recebe um pedido com id -1, para de ler
-        write(REJEITADOS_FIFO_FD,  pedido, sizeof(pedido));
-        close(REJEITADOS_FIFO_FD); //fechar fifo de rejeitados
-        close(ENTRADA_FIFO_FD); //fechar fifo de entrada
-    }
-    return;
-}
+  }
 
-int main(int argc, char* argv[]) {
+  criarFicheiroRegisto();
 
-    gettimeofday(&abertura, NULL); //guardar na struct a hora de inicio do programa
+  pthread_t tid;
+  pthread_create(&tid, NULL, handlerPedidos, NULL);
+  pthread_join(tid, NULL);
 
-    //Tratamento de argumentos
+  imprimirEstatisticas();
 
-    if (argc != 2) {
-        printf("Numero invalido de argumentos! USO: sauna <n. max utentes>");
-        exit(EXIT_FAILURE);
-    }
-
-    capacidade = atoi(argv[1]);
-
-
-    //Criaçao do ficheiro de registo
-    int pid;
-    pid = getpid();
-    char balPathname [20];
-    sprintf (balPathname, "/tmp/bal.%d", pid);
-    balFile=fopen(balPathname, "w");
-
-    if(balFile == NULL)
-    printf(". SAUNA: Error opening balFile\n");
-
-    //Abertura FIFO entrada
-    while ((ENTRADA_FIFO_FD = open("/tmp/entrada", O_RDONLY)) == -1) {
-        if (errno != EEXIST){
-            printf("FIFO 'entrada' nao existe! Tentando de novo...\n");
-        }
-    }
-
-    //Criação e abertura de FIFO de rejeitados
-    if (mkfifo("/tmp/rejeitados", S_IRUSR | S_IWUSR) != 0) {
-        if (errno == EEXIST)
-        {
-            //Do nothing
-        }
-        else
-        printf("Nao foi possivel criar o FIFO '/tmp/rejeitados'\n");
-        exit(EXIT_FAILURE);
-    }
-    // >abertura
-    while ((REJEITADOS_FIFO_FD = open("/tmp/rejeitados", O_WRONLY | O_NONBLOCK)) == -1) {
-        printf("Abrindo 'rejeitados'...\n");
-    }
-
-    //Ler numero de pedidos
-    read(ENTRADA_FIFO_FD, &PEDIDOS_POR_LER, sizeof(int));
-
-    //Receber Pedidos
-    receberPedidos();
-
-    int k;
-    for(k=0; k < 255; k++){
-        pthread_join(threadsTid[k], NULL); //espera pelas threads que estão a correr
-    }
-
-    printStats();
-    fclose(balFile);
-    unlink("/tmp/rejeitados");
-
-    exit(0);
+  pthread_exit(NULL);
 }
