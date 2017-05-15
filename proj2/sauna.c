@@ -74,6 +74,7 @@ void* atendimento(void* arg){
   pthread_mutex_unlock(&mutex);
 
   printf("Utente %d saiu.\n", r->id);
+  escreverFicheiro(r);
 
   pthread_exit(NULL);
 }
