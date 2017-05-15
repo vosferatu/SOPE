@@ -1,4 +1,3 @@
-
 //Fifos
 char* FIFO_ENTRADAS = "/tmp/entrada";
 char* FIFO_REJEITADOS = "/tmp/rejeitados";

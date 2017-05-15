@@ -40,7 +40,7 @@ void escreverFicheiro(Pedido* r ){
     fclose(LOG_FILE); //Closes log file.
 }
 
-void* NUM_PEDIDOSThread(void* arg){
+void* gerador(void* arg){
 
   if(mkfifo(FIFO_ENTRADAS, S_IRUSR | S_IWUSR) != 0 && errno != EEXIST){
     perror("Error creating GENERATE fifo");
@@ -79,7 +79,7 @@ void* NUM_PEDIDOSThread(void* arg){
   return NULL;
 }
 
-void* REJEITADOListener(void* arg){
+void* listenerRejeitados(void* arg){
   int fifo_fd;
   Pedido* r = malloc(sizeof(Pedido));
 
@@ -138,8 +138,8 @@ int main(int argc, char* argv[]){
 
   pthread_t tid_ent, tid_rej;
 
-  pthread_create(&tid_ent, NULL, NUM_PEDIDOSThread, NULL);
-  pthread_create(&tid_rej, NULL, REJEITADOListener, NULL);
+  pthread_create(&tid_ent, NULL, gerador, NULL);
+  pthread_create(&tid_rej, NULL, listenerRejeitados, NULL);
 
   pthread_join(tid_ent, NULL);
   pthread_join(tid_rej, NULL);
