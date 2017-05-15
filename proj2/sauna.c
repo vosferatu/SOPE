@@ -16,7 +16,7 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 //Sauna specific variables.
 int capacidade, vagas;
 char GENERO_ATUAL;
-int RECEBIDO_F, RECEBIDO_M, REJEITADO_F, REJEITADO_M, SERVIDO_F, SERVIDO_M;
+int RECEBIDO, REJEITADO_F, REJEITADO_M, SERVIDO_F, SERVIDO_M;
 int PEDIDOS_EM_ESPERA;
 
 
@@ -28,10 +28,10 @@ struct timeval inicio, stop; //estruturas para armazenar tempo
 
 void imprimirEstatisticas(){
 
-    printf("\nRESUMO:\n\n");
-    printf("Recebidos: Homens (%d), Mulheres (%d), Total (%d)\n", RECEBIDO_M, RECEBIDO_F, RECEBIDO_M + RECEBIDO_F);
-    printf("Rejeitados: Homens(%d), Mulheres, Total (%d)\n", REJEITADO_M, REJEITADO_F, REJEITADO_M + REJEITADO_F);
-    printf("Servidos: Homens (%d), Mulheres (%d), Total (%d)\n\n", SERVIDO_M, SERVIDO_F, SERVIDO_M + SERVIDO_F);
+    printf("\n[RESUMO]\n\n");
+    printf("RECEBIDOS:  %d PEDIDOS\n", RECEBIDO);
+    printf("REJEITADOS: TOTAL %d, HOMENS %d, MULHERES %d\n", REJEITADO_M + REJEITADO_F, REJEITADO_M, REJEITADO_F);
+    printf("SERVIDOS: TOTAL %d, HOMENS %d, MULHERES %d\n\n", SERVIDO_M + SERVIDO_F, SERVIDO_M, SERVIDO_F);
     printf("\n\n");
 }
 
@@ -100,8 +100,7 @@ void* handlerPedidos(void* arg){
   while (PEDIDOS_EM_ESPERA){
     Pedido* r = malloc(sizeof(Pedido));
 
-    if (r->genero == 'M') RECEBIDO_M++;
-    else RECEBIDO_F++;
+    RECEBIDO++;
 
     //Handles a new request.
     if (read(fifo_fd, r, sizeof(Pedido)) != 0){

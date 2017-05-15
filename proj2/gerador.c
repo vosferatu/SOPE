@@ -11,35 +11,42 @@
 #include "uteis.h"
 
 int ID = 1;
-int MAX_DURATION, REQUESTS;
-int GENERATED_M = 0, GENERATED_F = 0, REJECTED_M = 0, REJECTED_F = 0, DISCARDED_M = 0, DISCARDED_F = 0;
+int TEMPO_MAX, NUM_PEDIDOS;
+int PEDIDO_M = 0, PEDIDO_F = 0, REJEITADO_M = 0, REJEITADO_F = 0, DESCARTADO_M = 0, DESCARTADO_F = 0;
 
 //FIFO and log files & descriptors
 
 char* LOG_MSG_PATH;
 FILE* LOG_FILE;
 
-struct timeval start, stop;
+struct timeval inicio, stop;
 
-char* tip[] = {"REQUESTED", "REJECTED", "DISCARDED"};
+char* tip[] = {"PEDIDO", "REJEITADO", "DESCARTADO"};
 
-typedef struct{
-  int id;
-  char gender;
-  int duration;
-  int denials;
-} Request;
+void criarFicheiroRegisto (){
+    char pid_str[32], endString[64] = "/tmp/ger.";
+    sprintf(pid_str, "%d", getpid());
+    strcat(endString, pid_str);
+    LOG_MSG_PATH = (char*) malloc(strlen(endString) + 1);
+    strcpy(LOG_MSG_PATH, endString);
+}
 
-/* REQUEST GENERATOR THREAD */
-void* requestsThread(void* arg){
+void escreverFicheiro(Pedido* r ){
+    gettimeofday(&stop, NULL);
+    float elapsed = (float) ((float) stop.tv_usec - inicio.tv_usec) / 1000;
 
-  //Creates the generate pipe.
+    LOG_FILE = fopen(LOG_MSG_PATH, "a"); //Opens log file.
+    fprintf(LOG_FILE, "%4.2f - %4d - %2d - %c - %5d - %9s\n", elapsed, getpid(), pedido->id, pedido->genero, pedido->duracao, tip[0]);
+    fclose(LOG_FILE); //Closes log file.
+}
+
+void* NUM_PEDIDOSThread(void* arg){
+
   if(mkfifo(FIFO_ENTRADAS, S_IRUSR | S_IWUSR) != 0 && errno != EEXIST){
     perror("Error creating GENERATE fifo");
     exit(-1);
   }
 
-  //Tries to open the generate pipe.
   while ((FD_ENTRADAS = open(FIFO_ENTRADAS, O_WRONLY)) == -1){
     if (errno != ENXIO){ //errno equals ENXIO if read side hasn't been opened yet.
       perror("Error opening FIFO_ENTRADAS for write");
@@ -47,70 +54,64 @@ void* requestsThread(void* arg){
     }
   }
 
-  //Sends amount of requests to read.
-  write(FD_ENTRADAS, &REQUESTS, sizeof(int));
+  write(FD_ENTRADAS, &NUM_PEDIDOS, sizeof(int));
 
-  //Generates 'requests' number of random requests.
-  for (int i = 0; i < REQUESTS; i++){
-    Request* request = malloc(sizeof(Request));
+  for (int i = 0; i < NUM_PEDIDOS; i++){
+    Pedido* pedido = malloc(sizeof(Pedido));
 
-    request->id = ID++;
-    request->gender = (rand() % 2) ? 'M' : 'F';
-    request->duration = rand() % MAX_DURATION + 1;
-    request->denials = 0;
+    pedido->id = ID++;
+    pedido->genero = (rand() % 2) ? 'M' : 'F';
+    pedido->duracao = rand() % TEMPO_MAX + 1;
+    pedido->recusas = 0;
 
-    if (request->gender == 'M') GENERATED_M++;
-    else GENERATED_F++;
+    if (pedido->genero == 'M') {
+        PEDIDO_M++;
+    }
+    else PEDIDO_F++;
 
-    //Logs the operation.
-    gettimeofday(&stop, NULL);
-    float elapsed = (float) ((float) stop.tv_usec - start.tv_usec) / 1000;
+    escreverFicheiro(Pedido *r);
 
-    LOG_FILE = fopen(LOG_MSG_PATH, "a"); //Opens log file.
-    fprintf(LOG_FILE, "%4.2f - %4d - %2d - %c - %5d - %9s\n", elapsed, getpid(), request->id, request->gender, request->duration, tip[0]);
-    fclose(LOG_FILE); //Closes log file.
+    write(FD_ENTRADAS, pedido, sizeof(Pedido));
 
-    write(FD_ENTRADAS, request, sizeof(Request));
-
-    free(request);
+    free(pedido);
   }
 
   return NULL;
 }
 
-void* rejectedListener(void* arg){
+void* REJEITADOListener(void* arg){
   int fifo_fd;
-  Request* r = malloc(sizeof(Request));
+  Pedido* r = malloc(sizeof(Pedido));
 
   while ((fifo_fd = open(FIFO_REJEITADOS, O_RDONLY)) == -1){
-    if (errno == ENOENT) printf("No rejected pipe available! Retrying...\n");
+    if (errno == ENOENT) printf("Esperando...\n");
     sleep(1);
   }
 
-  while(read(fifo_fd, r, sizeof(Request)) != 0){
+  while(read(fifo_fd, r, sizeof(Pedido)) != 0){
 
     gettimeofday(&stop, NULL);
-    float elapsed = (float) ((float) stop.tv_usec - start.tv_usec) / 1000;
+    float elapsed = (float) ((float) stop.tv_usec - inicio.tv_usec) / 1000;
 
     LOG_FILE = fopen(LOG_MSG_PATH, "a"); //Opens log file.
-    fprintf(LOG_FILE, "%4.2f - %4d - %2d - %c - %5d - %9s\n", elapsed, getpid(), r->id, r->gender, r->duration, tip[1]);
+    fprintf(LOG_FILE, "%4.2f - %4d - %2d - %c - %5d - %9s\n", elapsed, getpid(), r->id, r->genero, r->duracao, tip[1]);
     fclose(LOG_FILE); //Closes log file.
 
-    if (r->gender == 'M') REJECTED_M++;
-    else REJECTED_F++;
+    if (r->genero == 'M') REJEITADO_M++;
+    else REJEITADO_F++;
 
-    if (r->denials < 3){
+    if (r->recusas < 3){
       write(FD_ENTRADAS, r, sizeof(*r));
     } else {
       gettimeofday(&stop, NULL);
-      float elapsed = (float) ((float) stop.tv_usec - start.tv_usec) / 1000;
+      float elapsed = (float) ((float) stop.tv_usec - inicio.tv_usec) / 1000;
 
       LOG_FILE = fopen(LOG_MSG_PATH, "a"); //Opens log file.
-      fprintf(LOG_FILE, "%4.2f - %4d - %2d - %c - %5d - %9s\n", elapsed, getpid(), r->id, r->gender, r->duration, tip[2]);
+      fprintf(LOG_FILE, "%4.2f - %4d - %2d - %c - %5d - %9s\n", elapsed, getpid(), r->id, r->genero, r->duracao, tip[2]);
       fclose(LOG_FILE); //Closes log file.
 
-      if (r->gender == 'M') DISCARDED_M++;
-      else if (r->gender == 'F') DISCARDED_F++;
+      if (r->genero == 'M') DESCARTADO_M++;
+      else if (r->genero == 'F') DESCARTADO_F++;
     }
     sleep(1); //Tries to enter every second.
   }
@@ -121,29 +122,24 @@ void* rejectedListener(void* arg){
 
 int main(int argc, char* argv[]){
 
-  gettimeofday(&start, NULL); //Start counting time.
+  gettimeofday(&inicio, NULL);
 
   time_t t;
-  srand((unsigned) time(&t)); //Seed randomization for RNG.
+  srand((unsigned) time(&t));
 
-  //Processes arguments and handles incorrect syntax.
   if(argc != 3){
-    printf("Wrong number of arguments. USAGE: program_name <number of requests> <max duration>\n");
+    printf("Wrong number of arguments. USAGE: program_name <number of NUM_PEDIDOS> <max duracao>\n");
     exit(-1);
   }
-  REQUESTS = atoi(argv[1]);
-  MAX_DURATION = atoi(argv[2]);
+  NUM_PEDIDOS = atoi(argv[1]);
+  TEMPO_MAX = atoi(argv[2]);
 
-  char pid_str[32], endString[64] = "/tmp/ger.";
-  sprintf(pid_str, "%d", getpid());
-  strcat(endString, pid_str);
-  LOG_MSG_PATH = (char*) malloc(strlen(endString) + 1);
-  strcpy(LOG_MSG_PATH, endString);
+  criarFicheiroRegisto();
 
   pthread_t tid_ent, tid_rej;
 
-  pthread_create(&tid_ent, NULL, requestsThread, NULL);
-  pthread_create(&tid_rej, NULL, rejectedListener, NULL);
+  pthread_create(&tid_ent, NULL, NUM_PEDIDOSThread, NULL);
+  pthread_create(&tid_rej, NULL, REJEITADOListener, NULL);
 
   pthread_join(tid_ent, NULL);
   pthread_join(tid_rej, NULL);
