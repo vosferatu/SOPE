@@ -86,10 +86,10 @@ void* handlerPedidos(void* arg){
 
   while ((fifo_fd = open(FIFO_ENTRADAS, O_RDONLY)) == -1){
     if (errno == ENOENT || errno == ENXIO){
-      printf("Retrying...\n");
+      printf("Esperando...\n");
       sleep(1);
     } else {
-      perror("Error opening GENERATE fifo");
+      perror("Erro ao o fifo de entradas");
       exit(-1);
     }
   }

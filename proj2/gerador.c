@@ -93,9 +93,9 @@ void* listenerRejeitados(void* arg){
     gettimeofday(&stop, NULL);
     float elapsed = (float) ((float) stop.tv_usec - inicio.tv_usec) / 1000;
 
-    LOG_FILE = fopen(LOG_MSG_PATH, "a"); //Opens log file.
+    LOG_FILE = fopen(LOG_MSG_PATH, "a"); 
     fprintf(LOG_FILE, "%4.2f - %4d - %2d - %c - %5d - %9s\n", elapsed, getpid(), r->id, r->genero, r->duracao, tip[1]);
-    fclose(LOG_FILE); //Closes log file.
+    fclose(LOG_FILE);
 
     if (r->genero == 'M') REJEITADO_M++;
     else REJEITADO_F++;
