@@ -94,27 +94,27 @@ void* handlerPedidos(void* arg){
     }
   }
 
-  //Gets the amount of requests to read.
+  //Numero de pedidos à espera
   read(fifo_fd, &PEDIDOS_EM_ESPERA, sizeof(int));
 
-  //Generates the specified amount of requests.
+  //Gera os pedidos pedidos
   while (PEDIDOS_EM_ESPERA){
     Pedido* r = malloc(sizeof(Pedido));
 
     RECEBIDO++;
 
-    //Handles a new request.
+    //Adiciona um novo pedid
     if (read(fifo_fd, r, sizeof(Pedido)) != 0){
       PEDIDOS_EM_ESPERA--;
 
-      gettimeofday(&stop, NULL); //Stops counting time.
+      gettimeofday(&stop, NULL);
       double elapsed = (stop.tv_sec - inicio.tv_sec)*1000.0f + (stop.tv_usec - inicio.tv_usec) / 1000.0f;
-      LOG_FILE = fopen(LOG_MSG_PATH, "a"); //Opens log file.
+      LOG_FILE = fopen(LOG_MSG_PATH, "a");
       fprintf(LOG_FILE, "%9.2f - %4d - %15lu - %2d - %c - %5d - %8s\n", elapsed, getpid(), pthread_self(), r->id, r->genero, r->duracao, tip[0]);
-      fclose(LOG_FILE); //Closes log file.
+      fclose(LOG_FILE);
 
       if ((r->genero == GENERO_ATUAL || GENERO_ATUAL == 'V') && vagas > 0){
-        vagas--; //Decrements the available seat counter.
+        vagas--;
         GENERO_ATUAL = r->genero;
         pthread_create(&tid[current], NULL, atendimento, (void*) r);
 
@@ -129,12 +129,11 @@ void* handlerPedidos(void* arg){
 
         if (r->recusas != 3) PEDIDOS_EM_ESPERA++;
 
-        //Logs the request.
-        gettimeofday(&stop, NULL); //Stops counting time.
+        gettimeofday(&stop, NULL);
         double elapsed = (stop.tv_sec - inicio.tv_sec)*1000.0f + (stop.tv_usec - inicio.tv_usec) / 1000.0f;
-        LOG_FILE = fopen(LOG_MSG_PATH, "a"); //Opens log file.
+        LOG_FILE = fopen(LOG_MSG_PATH, "a");
         fprintf(LOG_FILE, "%9.2f - %4d - %15lu - %2d - %c - %5d - %8s\n", elapsed, getpid(), pthread_self(), r->id, r->genero, r->duracao, tip[1]);
-        fclose(LOG_FILE); //Closes log file.
+        fclose(LOG_FILE);
       }
     }
   }

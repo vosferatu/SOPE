@@ -35,7 +35,7 @@ void escreverFicheiro(Pedido* pedido ){
     gettimeofday(&stop, NULL);
     float elapsed = (float) ((float) stop.tv_usec - inicio.tv_usec) / 1000;
 
-    LOG_FILE = fopen(LOG_MSG_PATH, "a"); //Opens log file.
+    LOG_FILE = fopen(LOG_MSG_PATH, "a"); //Abre o Log file no modo "a" -- Appends to a file
     fprintf(LOG_FILE, "%4.2f - %4d - %2d - %c - %5d - %9s\n", elapsed, getpid(), pedido->id, pedido->genero, pedido->duracao, tip[0]);
     fclose(LOG_FILE); //Closes log file.
 }
@@ -43,13 +43,13 @@ void escreverFicheiro(Pedido* pedido ){
 void* gerador(void* arg){
 
   if(mkfifo(FIFO_ENTRADAS, S_IRUSR | S_IWUSR) != 0 && errno != EEXIST){
-    perror("Error creating GENERATE fifo");
+    perror("Erro ao criar fifo de entradas");
     exit(-1);
   }
 
   while ((FD_ENTRADAS = open(FIFO_ENTRADAS, O_WRONLY)) == -1){
-    if (errno != ENXIO){ //errno equals ENXIO if read side hasn't been opened yet.
-      perror("Error opening FIFO_ENTRADAS for write");
+    if (errno != ENXIO){
+      perror("Erro ao abrir o fifo de entradas");
       exit(-1);
     }
   }
