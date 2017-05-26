@@ -29,7 +29,7 @@ struct timeval inicio, stop; //estruturas para armazenar tempo
 void imprimirEstatisticas(){
 
     printf("\n[RESUMO]\n\n");
-    printf("RECEBIDOS:  %d PEDIDOS\n", RECEBIDO);
+    printf("RECEBIDOS:  %d PEDIDOS\n", RECEBIDO - (REJEITADO_M + REJEITADO_F) );
     printf("REJEITADOS: TOTAL %d, HOMENS %d, MULHERES %d\n", REJEITADO_M + REJEITADO_F, REJEITADO_M, REJEITADO_F);
     printf("SERVIDOS: TOTAL %d, HOMENS %d, MULHERES %d\n\n", SERVIDO_M + SERVIDO_F, SERVIDO_M, SERVIDO_F);
     printf("\n\n");
